@@ -1,9 +1,12 @@
 import React from 'react';
+import Hero from './sections/Hero';
+import Features from './sections/Features';
 
 const Home = () => {
     return (
-        <div>
-            Home sdfasdklfasd
+        <div className="min-h-screen bg-[#0a0a1a]">
+            <Hero />
+            <Features />
         </div>
     );
 };
