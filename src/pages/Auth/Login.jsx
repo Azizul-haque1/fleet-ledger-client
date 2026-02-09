@@ -1,28 +1,69 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { useForm } from 'react-hook-form';
 import './Auth.css';
 import SocialSignIn from '../../components/shared/SocialSignIn';
+import useAuth from '../../hooks/useAuth';
 
 const Login = () => {
+    const { signInUser, setUser } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
     const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-        rememberMe: false
+    const [authError, setAuthError] = useState('');
+
+    // React Hook Form setup
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting }
+    } = useForm({
+        defaultValues: {
+            email: '',
+            password: '',
+            rememberMe: false
+        }
     });
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
+    // Get the redirect path from location state or default to home
+    const from = location.state?.from?.pathname || location.state || '/';
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // No functionality - UI only
-        console.log('Login form submitted:', formData);
+    // Form submission handler
+    const onSubmit = async (data) => {
+        setAuthError('');
+
+        try {
+            const result = await signInUser(data.email, data.password);
+            console.log('Login successful:', result.user);
+            setUser(result.user);
+            navigate(from, { replace: true });
+        } catch (err) {
+            console.error('Login error:', err);
+            // Handle Firebase auth errors with user-friendly messages
+            switch (err.code) {
+                case 'auth/invalid-email':
+                    setAuthError('Invalid email address format');
+                    break;
+                case 'auth/user-disabled':
+                    setAuthError('This account has been disabled');
+                    break;
+                case 'auth/user-not-found':
+                    setAuthError('No account found with this email');
+                    break;
+                case 'auth/wrong-password':
+                    setAuthError('Incorrect password');
+                    break;
+                case 'auth/invalid-credential':
+                    setAuthError('Invalid email or password');
+                    break;
+                case 'auth/too-many-requests':
+                    setAuthError('Too many failed attempts. Please try again later');
+                    break;
+                default:
+                    setAuthError('Failed to sign in. Please try again');
+            }
+        }
     };
 
     return (
@@ -57,12 +98,24 @@ const Login = () => {
                     <p>Sign in to continue managing your fleet</p>
                 </div>
 
+                {/* Auth Error Message */}
+                {authError && (
+                    <div className="auth-error">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                            <path d="M12 8V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <circle cx="12" cy="16" r="1" fill="currentColor" />
+                        </svg>
+                        <span>{authError}</span>
+                    </div>
+                )}
+
                 {/* Form */}
-                <form className="auth-form" onSubmit={handleSubmit}>
+                <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
                     {/* Email Field */}
                     <div className="form-group">
                         <label htmlFor="email">Email Address</label>
-                        <div className="input-wrapper">
+                        <div className={`input-wrapper ${errors.email ? 'input-error' : ''}`}>
                             <span className="input-icon">
                                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -72,19 +125,25 @@ const Login = () => {
                             <input
                                 type="email"
                                 id="email"
-                                name="email"
                                 placeholder="Enter your email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
+                                {...register('email', {
+                                    required: 'Email is required',
+                                    pattern: {
+                                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                        message: 'Invalid email address'
+                                    }
+                                })}
                             />
                         </div>
+                        {errors.email && (
+                            <span className="field-error">{errors.email.message}</span>
+                        )}
                     </div>
 
                     {/* Password Field */}
                     <div className="form-group">
                         <label htmlFor="password">Password</label>
-                        <div className="input-wrapper">
+                        <div className={`input-wrapper ${errors.password ? 'input-error' : ''}`}>
                             <span className="input-icon">
                                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -94,11 +153,14 @@ const Login = () => {
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 id="password"
-                                name="password"
                                 placeholder="Enter your password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
+                                {...register('password', {
+                                    required: 'Password is required',
+                                    minLength: {
+                                        value: 6,
+                                        message: 'Password must be at least 6 characters'
+                                    }
+                                })}
                             />
                             <button
                                 type="button"
@@ -118,6 +180,9 @@ const Login = () => {
                                 )}
                             </button>
                         </div>
+                        {errors.password && (
+                            <span className="field-error">{errors.password.message}</span>
+                        )}
                     </div>
 
                     {/* Remember Me & Forgot Password */}
@@ -125,9 +190,7 @@ const Login = () => {
                         <label className="checkbox-wrapper">
                             <input
                                 type="checkbox"
-                                name="rememberMe"
-                                checked={formData.rememberMe}
-                                onChange={handleChange}
+                                {...register('rememberMe')}
                             />
                             <span className="checkbox-custom"></span>
                             <span className="checkbox-label">Remember me</span>
@@ -138,12 +201,25 @@ const Login = () => {
                     </div>
 
                     {/* Submit Button */}
-                    <button type="submit" className="auth-btn primary">
-                        <span>Sign In</span>
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                    <button
+                        type="submit"
+                        className={`auth-btn primary ${isSubmitting ? 'loading' : ''}`}
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <span className="spinner"></span>
+                                <span>Signing In...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>Sign In</span>
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    <path d="M12 5L19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </>
+                        )}
                     </button>
 
                     {/* Divider */}
