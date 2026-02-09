@@ -546,6 +546,15 @@
     color: #a5b4fc;
 }
 
+/* Checkbox Error State */
+.checkbox-wrapper.checkbox-error .checkbox-custom {
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
+.checkbox-wrapper.checkbox-error .checkbox-label {
+    color: #fca5a5;
+}
+
 /* Form Options Row */
 .form-options {
     display: flex;
