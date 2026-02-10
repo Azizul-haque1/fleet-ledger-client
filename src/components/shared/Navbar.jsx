@@ -55,13 +55,14 @@ const Navbar = () => {
                                 className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-[#0f1629] border border-white/10 rounded-box w-52 text-white">
                                 <li className="px-4 py-2 opacity-50 text-xs uppercase font-bold">Account</li>
                                 <li>
-                                    <Link to="/profile" className="justify-between">
+                                    <Link to="/admin/profile" className="justify-between">
                                         Profile
-                                        <span className="badge">New</span>
+                                        <span className="badge badge-primary badge-sm">New</span>
                                     </Link>
                                 </li>
-                                <li><Link to="/dashboard">Dashboard</Link></li>
-                                <li><Link to="/settings">Settings</Link></li>
+                                <li><Link to="/admin">Dashboard</Link></li>
+                                <li><Link to="/admin/settings">Settings</Link></li>
+
                                 <div className="divider my-0 opacity-10"></div>
                                 <li><button onClick={handleLogout} className="text-red-400 hover:text-red-300">Logout</button></li>
                             </ul>
