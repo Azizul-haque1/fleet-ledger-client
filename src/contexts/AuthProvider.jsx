@@ -47,7 +47,7 @@ const AuthProvider = ({ children }) => {
             unsubscribe()
         }
     }, [])
-
+    
     const AuthInfo = {
         registerUser,
         signInUser,
